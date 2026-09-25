@@ -1,7 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { undoReplacement } from './timing';
 import type { Game, GameEvent, Player, Team } from './types';
 
-export const db = new Dexie('coach-sub-assistant') as Dexie & {
+// Dexie's live-query cache can keep serving a deleted game (seen with deleteGame in 4.4.6),
+// which left "Resume game" pointing at nothing. The data is tiny, so always read through.
+export const db = new Dexie('coach-sub-assistant', { cache: 'disabled' }) as Dexie & {
   teams: EntityTable<Team, 'id'>;
   players: EntityTable<Player, 'id'>;
   games: EntityTable<Game, 'id'>;
@@ -23,12 +26,16 @@ export async function addEvent(e: GameEvent): Promise<void> {
   await db.events.add(e);
 }
 
-/** Remove the most recent event for a game. */
+/** Remove the most recent event for a game (see undoReplacement for End period). */
 export async function undoLast(gameId: number): Promise<GameEvent | undefined> {
-  const events = await gameEvents(gameId);
-  const last = events.at(-1);
-  if (last?.id != null) await db.events.delete(last.id);
-  return last;
+  return db.transaction('rw', db.events, async () => {
+    const last = (await gameEvents(gameId)).at(-1);
+    if (last?.id == null) return last;
+    await db.events.delete(last.id);
+    const replacement = undoReplacement(last);
+    if (replacement) await db.events.add(replacement);
+    return last;
+  });
 }
 
 export async function deleteGame(gameId: number): Promise<void> {

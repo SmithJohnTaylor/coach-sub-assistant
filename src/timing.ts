@@ -120,6 +120,15 @@ export function replay(game: GameShape, events: GameEvent[], now: number): GameS
   return s;
 }
 
+/**
+ * What undoing `last` should leave in the log. Undoing "End period" returns to that period
+ * with the clock stopped at the moment it was ended, so a halftime break (or the days before
+ * a saved game was reopened) never counts as playing time. Everything else is just removed.
+ */
+export function undoReplacement(last: GameEvent): GameEvent | null {
+  return last.type === 'periodEnd' ? { gameId: last.gameId, t: last.t, type: 'pause' } : null;
+}
+
 /** mm:ss, or h:mm:ss past an hour. */
 export function fmt(ms: number): string {
   const total = Math.floor(ms / 1000);

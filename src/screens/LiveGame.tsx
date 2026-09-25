@@ -93,7 +93,8 @@ export function LiveGame({ game, team, players, events }: Props) {
   async function undo() {
     const last = await undoLast(gameId);
     setSel(null);
-    if (last) flash(`Undid: ${describe(last, name)}`);
+    if (last?.type === 'periodEnd') flash('Undid end of period. Clock paused where it stopped; tap Resume.');
+    else if (last) flash(`Undid: ${describe(last, name)}`);
   }
 
   async function endPeriod() {

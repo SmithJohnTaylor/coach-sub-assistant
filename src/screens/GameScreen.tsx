@@ -4,7 +4,8 @@ import { LiveGame } from './LiveGame';
 import { GameSummary } from './GameSummary';
 
 export function GameScreen({ gameId }: { gameId: number }) {
-  const game = useLiveQuery(() => db.games.get(gameId), [gameId]);
+  // null = no such game (undefined means still loading).
+  const game = useLiveQuery(async () => (await db.games.get(gameId)) ?? null, [gameId]);
   const team = useLiveQuery(async () => (game ? db.teams.get(game.teamId) : undefined), [game?.teamId]);
   const players = useLiveQuery(
     async () => (game ? db.players.where('teamId').equals(game.teamId).toArray() : undefined),
