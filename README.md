@@ -2,7 +2,7 @@
 
 A phone web app for tracking youth soccer playing time from the sideline. Tap to sub, see who's played the least, and share fair minutes with parents after the game. It works offline, and all data stays on your phone.
 
-**Open it:** https://smithjohntaylor.github.io/coach-sub-assistant/
+**Open it:** https://subassistant.soccer
 
 <p>
   <img src="docs/screenshots/live-game.png" width="300" alt="Live game: the field with each player's minutes, fair-share colors, and the bench sorted by least time played">
@@ -26,6 +26,8 @@ A phone web app for tracking youth soccer playing time from the sideline. Tap to
 1. Open the link above in Safari (iPhone) or Chrome (Android).
 2. **iPhone:** Share → **Add to Home Screen**. **Android:** ⋮ menu → **Add to Home screen** (or **Install app**).
 3. Open it once while you have signal. After that it works with no connection.
+
+Add it to your home screen rather than just bookmarking it. On iPhone, Safari can clear a website's saved data after about a week without a visit; apps added to the home screen are exempt.
 
 The app updates itself when it's online. Open it once on Wi-Fi before game day to pick up the latest version.
 
@@ -108,7 +110,8 @@ Sam,11,36,0,0,19,17
 Everything is stored in your phone's browser. Nothing is uploaded, and nobody else can see it. That also means:
 
 - Data doesn't sync between devices, or between Safari and the home-screen app on some phones. Use the same one every game.
-- Clearing browser data deletes it. Download the season CSV now and then as a backup.
+- Clearing browser data deletes it, and so can Safari on iPhone if the app isn't on your home screen (see [Install on your phone](#install-on-your-phone)).
+- There's no restore, so tap **Download CSV** on each game summary (or on Season stats) to keep your own copy.
 
 ## Development
 
@@ -119,7 +122,7 @@ npm test         # all tests (see below)
 npm run build    # typecheck + production build into dist/
 ```
 
-Pushing to `main` runs the tests, builds, and deploys to GitHub Pages (`.github/workflows/deploy.yml`). The build uses relative paths, so `dist/` also works on any static host (for example, drag it onto https://app.netlify.com/drop).
+Pushing to `main` runs the tests, builds, and deploys to GitHub Pages at https://subassistant.soccer (`.github/workflows/deploy.yml`). The custom domain is set in the repo's Pages settings; DNS is at Porkbun. The build uses relative paths, so `dist/` also works on any static host (for example, drag it onto https://app.netlify.com/drop).
 
 ### Tests
 
