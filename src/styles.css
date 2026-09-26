@@ -346,6 +346,41 @@ details > * + * {
   color: var(--accent-text);
 }
 
+/* ---- home / welcome ---- */
+.welcome {
+  text-align: center;
+  margin-top: 8px;
+}
+.welcome img {
+  border-radius: 14px;
+}
+.tagline {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 12px 0 8px;
+}
+.how {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.how li {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.tip {
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border-radius: 12px;
+}
+
 /* ---- positions ---- */
 .pos {
   display: inline-block;

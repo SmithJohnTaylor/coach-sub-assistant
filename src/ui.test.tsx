@@ -8,6 +8,7 @@ import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { db } from './db';
+import { GUIDE_URL } from './screens/Teams';
 
 const SEC = 1000;
 const MIN = 60 * SEC;
@@ -83,6 +84,7 @@ afterEach(() => {
 
 async function createTeamAndRoster() {
   const { container } = render(<App />);
+  await sees('Create your team');
   const teamName = container.querySelector<HTMLInputElement>('input[placeholder="Team name"]')!;
   fireEvent.change(teamName, { target: { value: 'Tigers' } });
   await tap(button(container, 'Add team'));
@@ -96,6 +98,27 @@ async function createTeamAndRoster() {
   await sees(`Roster (${ROSTER.length})`);
   return container;
 }
+
+describe('home screen', () => {
+  it('first visit shows the welcome page; it gives way to the team list once a team exists', async () => {
+    const { container } = render(<App />);
+    await sees('Fair playing time, tracked from the sideline');
+    await sees('Create your team');
+    await sees('Add it to your home screen');
+    const guides = [...container.querySelectorAll('a')].filter((a) => a.getAttribute('href') === GUIDE_URL);
+    expect(guides.map((a) => a.textContent)).toEqual(['Guide', 'Read the full guide ›']);
+    expect(guides.every((a) => a.target === '_blank')).toBe(true);
+
+    fireEvent.change(container.querySelector('input[placeholder="Team name"]')!, { target: { value: 'Tigers' } });
+    await tap(button(container, 'Add team'));
+    await sees('Roster (0)');
+    nav('#/');
+    await sees('Tigers');
+    expect(document.body.textContent).not.toContain('Fair playing time');
+    expect(document.body.textContent).toContain('New team');
+    expect(button(container, 'Guide').getAttribute('href')).toBe(GUIDE_URL);
+  });
+});
 
 describe('game day, tapped through the real screens', () => {
   it('7v7: setup, subs, swap, undo, halftime, late arrival, reload, full time, summary, season', async () => {
@@ -257,6 +280,7 @@ describe('game day, tapped through the real screens', () => {
 
   it('11v11 with a short bench: every spot renders and subs work', async () => {
     const { container } = render(<App />);
+    await sees('Create your team');
     fireEvent.change(container.querySelector('input[placeholder="Team name"]')!, { target: { value: 'Big' } });
     fireEvent.change(container.querySelector('select')!, { target: { value: '11v11' } });
     await tap(button(container, 'Add team'));
