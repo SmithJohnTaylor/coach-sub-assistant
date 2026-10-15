@@ -131,7 +131,7 @@ function Welcome() {
           their own.
         </li>
       </ul>
-      <p className="small muted">No account, and no signal needed at the field. Everything stays on this phone.</p>
+      <p className="small muted">No account, and no signal needed at the field. Everything stays on this phone unless you share a game live.</p>
     </section>
   );
 }

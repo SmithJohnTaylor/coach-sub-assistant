@@ -4,6 +4,7 @@ import { TeamPage } from './screens/TeamPage';
 import { GameSetup } from './screens/GameSetup';
 import { GameScreen } from './screens/GameScreen';
 import { Season } from './screens/Season';
+import { WatchScreen } from './screens/WatchScreen';
 
 export function App() {
   const route = useRoute();
@@ -18,5 +19,7 @@ export function App() {
       return <GameScreen key={route.gameId} gameId={route.gameId} />;
     case 'season':
       return <Season key={route.teamId} teamId={route.teamId} />;
+    case 'watch':
+      return <WatchScreen key={route.shareId} shareId={route.shareId} />;
   }
 }

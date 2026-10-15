@@ -608,6 +608,72 @@ details > * + * {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 
+/* ---- live sharing ---- */
+.live-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.live-status .grow {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+}
+.live-status.open {
+  color: var(--accent);
+}
+.live-status.offline {
+  color: var(--low);
+}
+.live-status button.link {
+  min-height: 36px;
+  padding: 4px 6px;
+  font-size: 14px;
+}
+.live.read-only .slot,
+.live.read-only .bench-card {
+  cursor: default;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+.sheet {
+  width: 100%;
+  max-width: 640px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
+  border-radius: 16px 16px 0 0;
+  background: var(--surface);
+}
+.sheet h2 {
+  margin-top: 0;
+}
+.qr {
+  display: block;
+  width: min(240px, 70vw);
+  margin: 12px auto;
+  border-radius: 8px;
+}
+.share-url {
+  text-align: center;
+  word-break: break-all;
+  user-select: all;
+  color: var(--muted);
+}
+
 /* ---- tables ---- */
 .table-wrap {
   overflow-x: auto;

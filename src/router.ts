@@ -5,10 +5,12 @@ export type Route =
   | { name: 'team'; teamId: number }
   | { name: 'newGame'; teamId: number }
   | { name: 'game'; gameId: number }
-  | { name: 'season'; teamId: number };
+  | { name: 'season'; teamId: number }
+  | { name: 'watch'; shareId: string };
 
 export function parse(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (parts[0] === 'watch' && parts[1]) return { name: 'watch', shareId: parts[1] };
   const id = Number(parts[1]);
   if (parts[0] === 'team' && id) {
     if (parts[2] === 'new-game') return { name: 'newGame', teamId: id };

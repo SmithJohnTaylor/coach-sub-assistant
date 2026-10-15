@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Header } from '../components/Header';
 import { TimeTable } from '../components/TimeTable';
 import { addEvent, db, deleteGame, undoLast } from '../db';
@@ -24,11 +24,19 @@ interface Props {
   team: Team;
   players: Player[];
   events: GameEvent[];
+  /** Watching someone else's game: show everything, change nothing. */
+  readOnly?: boolean;
+  /** ms to add to this phone's clock to get the clock the events were stamped with. */
+  clockOffset?: number;
+  /** A row under the clock bar (live-sharing status). */
+  statusBar?: ReactNode;
+  /** Extra links next to Discard game. */
+  extraActions?: ReactNode;
 }
 
-export function LiveGame({ game, team, players, events }: Props) {
+export function LiveGame({ game, team, players, events, readOnly, clockOffset = 0, statusBar, extraActions }: Props) {
   const lastRunning = useMemo(() => replay(game, events, Date.now()).running, [game, events]);
-  const now = useNow(lastRunning);
+  const now = useNow(lastRunning) + clockOffset;
   const s = replay(game, events, now);
   useWakeLock(s.running);
 
@@ -74,6 +82,7 @@ export function LiveGame({ game, team, players, events }: Props) {
   }
 
   function tapSlot(slot: number) {
+    if (readOnly) return;
     if (!sel) return setSel({ kind: 'slot', slot });
     if (sel.kind === 'slot') {
       if (sel.slot === slot) return setSel(null);
@@ -85,6 +94,7 @@ export function LiveGame({ game, team, players, events }: Props) {
   }
 
   function tapBench(id: number) {
+    if (readOnly) return;
     if (sel?.kind === 'slot') return sub(sel.slot, id);
     if (sel?.kind === 'bench' && sel.playerId === id) return setSel(null);
     setSel({ kind: 'bench', playerId: id });
@@ -138,7 +148,7 @@ export function LiveGame({ game, team, players, events }: Props) {
     <>
       <Header
         title={`${team.name}${game.opponent ? ` vs ${game.opponent}` : ''}`}
-        back={href.team(team.id!)}
+        back={readOnly ? href.home() : href.team(team.id!)}
         right={
           <button className="link" onClick={() => setView(view === 'field' ? 'table' : 'field')}>
             {view === 'field' ? 'Table' : 'Field'}
@@ -156,7 +166,7 @@ export function LiveGame({ game, team, players, events }: Props) {
             {over > 0 && <span className="stoppage"> +{fmt(over)}</span>}
           </div>
         </div>
-        {s.finished ? (
+        {readOnly ? null : s.finished ? (
           <button className="primary" onClick={finish}>
             Save game
           </button>
@@ -174,8 +184,9 @@ export function LiveGame({ game, team, players, events }: Props) {
           </div>
         )}
       </div>
+      {statusBar}
 
-      <main className="live">
+      <main className={readOnly ? 'live read-only' : 'live'}>
         {view === 'table' ? (
           <TimeTable lines={liveLines(game, s, byId)} />
         ) : (
@@ -214,7 +225,16 @@ export function LiveGame({ game, team, players, events }: Props) {
               })}
             </div>
 
-            <div className="hint">{hint ?? (s.running ? '' : s.gameMs === 0 ? 'Tap Start at kickoff' : 'Clock paused')}</div>
+            <div className="hint">
+              {hint ??
+                (s.running
+                  ? ''
+                  : s.gameMs === 0
+                    ? readOnly
+                      ? 'Waiting for kickoff'
+                      : 'Tap Start at kickoff'
+                    : 'Clock paused')}
+            </div>
 
             {sel?.kind === 'slot' && s.lineup[sel.slot] != null && (
               <button className="small-action" onClick={() => sub(sel.slot, null)}>
@@ -241,9 +261,11 @@ export function LiveGame({ game, team, players, events }: Props) {
                   </button>
                 );
               })}
-              <button className="bench-card add" onClick={() => setShowAdd(!showAdd)}>
-                + Late arrival
-              </button>
+              {!readOnly && (
+                <button className="bench-card add" onClick={() => setShowAdd(!showAdd)}>
+                  + Late arrival
+                </button>
+              )}
             </div>
 
             {showAdd && (
@@ -263,18 +285,23 @@ export function LiveGame({ game, team, players, events }: Props) {
           </>
         )}
 
-        <div className="footer-actions">
-          <button className="link danger-text" onClick={discard}>
-            Discard game
-          </button>
-        </div>
+        {!readOnly && (
+          <div className="footer-actions">
+            <button className="link danger-text" onClick={discard}>
+              Discard game
+            </button>
+            {extraActions}
+          </div>
+        )}
       </main>
 
-      <div className="bottom-bar">
-        <button onClick={undo} disabled={events.length === 0}>
-          ↶ Undo{events.length ? `: ${describe(events[events.length - 1], name)}` : ''}
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="bottom-bar">
+          <button onClick={undo} disabled={events.length === 0}>
+            ↶ Undo{events.length ? `: ${describe(events[events.length - 1], name)}` : ''}
+          </button>
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
     </>

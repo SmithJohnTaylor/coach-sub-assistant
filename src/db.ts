@@ -1,4 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { stopShare } from './live/client';
 import { undoReplacement } from './timing';
 import type { Game, GameEvent, Player, Team } from './types';
 
@@ -39,15 +40,18 @@ export async function undoLast(gameId: number): Promise<GameEvent | undefined> {
 }
 
 export async function deleteGame(gameId: number): Promise<void> {
+  const share = (await db.games.get(gameId))?.share;
   await db.transaction('rw', db.games, db.events, async () => {
     await db.events.where('gameId').equals(gameId).delete();
     await db.games.delete(gameId);
   });
+  if (share) stopShare(share);
 }
 
 export async function deleteTeam(teamId: number): Promise<void> {
   await db.transaction('rw', [db.teams, db.players, db.games, db.events], async () => {
     const games = (await db.games.where('teamId').equals(teamId).primaryKeys()) as number[];
+    for (const g of await db.games.bulkGet(games)) if (g?.share) stopShare(g.share);
     await db.events.where('gameId').anyOf(games).delete();
     await db.games.bulkDelete(games);
     await db.players.where('teamId').equals(teamId).delete();

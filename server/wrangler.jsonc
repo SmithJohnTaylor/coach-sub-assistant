@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sub-assistant-live",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "SHARE_ROOM", "class_name": "ShareRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["ShareRoom"] }],
+  // Requires subassistant.soccer's DNS to be on Cloudflare. See server/README.md.
+  "routes": [{ "pattern": "live.subassistant.soccer", "custom_domain": true }],
+  "observability": { "enabled": true }
+}

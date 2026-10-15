@@ -25,5 +25,7 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
+    // server/ has its own runner (Workers runtime): cd server && npm test
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 });

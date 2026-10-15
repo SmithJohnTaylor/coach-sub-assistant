@@ -105,9 +105,19 @@ Sam,11,36,0,0,19,17
 - **Injury or long stoppage:** tap **Pause**, make any subs, then **Resume**. Paused time doesn't count.
 - **Locking the phone or closing the app is fine.** Time is worked out from timestamps, so it's right when you come back.
 
+## Sharing a game live
+
+An assistant coach can follow along on their own phone: the field, bench, clock, and everyone's minutes, updating as you sub. They can look but not change anything.
+
+1. During the game, scroll to the bottom and tap **Share live view**.
+2. Have the other coach scan the QR code, or tap **Send link** / **Copy link**. They don't need the app installed or a team set up.
+3. The bar under the clock shows how many people are watching. Tap **Link** to show the code again, or **Stop** to end it.
+
+Sharing needs signal on your phone. If you lose it, keep coaching as normal: the watcher's clock keeps running, they see "Coach's phone is offline", and they catch up as soon as you reconnect. The link stops working when you tap Stop, delete the game, or a day after the last change.
+
 ## Your data
 
-Everything is stored in your phone's browser. Nothing is uploaded, and nobody else can see it. That also means:
+Everything is stored in your phone's browser. Nothing is uploaded and nobody else can see it, unless you [share a game live](#sharing-a-game-live). Then that one game (team name, opponent, the first names and numbers of the kids at it, and the subs) goes to the relay server until you stop sharing or a day passes. Storing everything on the phone also means:
 
 - Data doesn't sync between devices, or between Safari and the home-screen app on some phones. Use the same one every game.
 - Clearing browser data deletes it, and so can Safari on iPhone if the app isn't on your home screen (see [Install on your phone](#install-on-your-phone)).
@@ -122,6 +132,8 @@ npm test         # all tests (see below)
 npm run build    # typecheck + production build into dist/
 ```
 
+To try live sharing locally, also run the relay: `cd server && npm install && npm run dev`. In dev the app looks for it on port 8787 of the same host, so phones on your Wi-Fi can watch too.
+
 Pushing to `main` runs the tests, builds, and deploys to GitHub Pages at https://subassistant.soccer (`.github/workflows/deploy.yml`). The custom domain is set in the repo's Pages settings; DNS is at Porkbun. The build uses relative paths, so `dist/` also works on any static host (for example, drag it onto https://app.netlify.com/drop).
 
 ### Tests
@@ -129,9 +141,12 @@ Pushing to `main` runs the tests, builds, and deploys to GitHub Pages at https:/
 - `src/timing.test.ts`: unit tests for the timing engine.
 - `src/scenarios.test.ts`: full simulated games in every format, sideline mistakes (late Start, forgotten End period, wrong sub, double taps, reopening a saved game), and 2,000 randomized games checked second by second against a simple reference model.
 - `src/ui.test.tsx`: taps through the real screens in a simulated browser (jsdom) with a fake clock and in-memory storage, from creating a team through subs, halftime, a mid-game reload, the summary, and season stats.
+- `src/live.test.tsx`: live sharing from both phones, with a fake relay: the share link, a snapshot on every change, reconnecting, stopping, the read-only watch screen, and clocks lined up across phones that disagree.
+- `server/test/`: the relay itself, run inside the Workers runtime (`cd server && npm test`).
 
 ### How it works
 
 - Every game action (start, pause, end period, sub, swap) is saved as an event with a timestamp in IndexedDB.
 - Minutes are recomputed from that event log (`src/timing.ts`), which is why locking the phone, switching apps, or reloading never loses time.
 - Undo deletes the last event. For End period, it also leaves a pause at the same moment (`undoReplacement` in `src/timing.ts`).
+- Live sharing (`src/live/`, `server/`): while a game is shared, the coach's phone sends the whole game (a few KB) to a small Cloudflare relay on every change, and the relay passes it to anyone watching. Watchers rebuild the screen with the same `replay()`, after correcting for the difference between the two phones' clocks. See [server/README.md](server/README.md).

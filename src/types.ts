@@ -30,6 +30,8 @@ export interface Game {
   present: number[]; // player ids available for this game
   startLineup: (number | null)[]; // player id per slot at kickoff
   status: GameStatus;
+  /** Set while this game is shared live; the key proves this phone owns the share. */
+  share?: { id: string; key: string };
 }
 
 /** Everything that changes during a game is an event with a wall-clock timestamp. */
