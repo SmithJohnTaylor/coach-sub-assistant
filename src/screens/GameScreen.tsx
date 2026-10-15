@@ -56,7 +56,13 @@ export function GameScreen({ gameId }: { gameId: number }) {
           )
         }
       />
-      {showLink && game.share && <ShareSheet url={watchLink(game.share.id)} onClose={() => setShowLink(false)} />}
+      {showLink && game.share && (
+        <ShareSheet
+          url={watchLink(game.share.id)}
+          game={game.opponent ? `${team.name} vs ${game.opponent}` : team.name}
+          onClose={() => setShowLink(false)}
+        />
+      )}
     </>
   );
 }

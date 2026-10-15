@@ -435,6 +435,22 @@ details > * + * {
   display: flex;
   gap: 8px;
 }
+.phase {
+  text-align: right;
+}
+.phase-label {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.phase-detail {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.phase-detail.running {
+  color: var(--accent);
+}
 .clock-buttons button {
   min-width: 84px;
   padding: 8px 12px;

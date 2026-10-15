@@ -19,6 +19,19 @@ export function periodName(game: Pick<Game, 'periods'>, period: number): string 
   return `Period ${period}`;
 }
 
+/** Where the game is, at a glance: which period, and whether the ball is in play. */
+export function gamePhase(game: Pick<Game, 'periods'>, s: GameState): { label: string; detail: string } {
+  if (s.finished) return { label: 'Full time', detail: '' };
+  if (s.running) return { label: periodName(game, s.period), detail: 'In play' };
+  if (s.gameMs === 0) return { label: periodName(game, 1), detail: 'Not started' };
+  if (s.periodMs === 0) {
+    return game.periods === 2
+      ? { label: 'Halftime', detail: '2nd half next' }
+      : { label: 'Break', detail: `${periodName(game, s.period)} next` };
+  }
+  return { label: periodName(game, s.period), detail: 'Paused' };
+}
+
 interface Props {
   game: Game;
   team: Team;
@@ -166,7 +179,9 @@ export function LiveGame({ game, team, players, events, readOnly, clockOffset = 
             {over > 0 && <span className="stoppage"> +{fmt(over)}</span>}
           </div>
         </div>
-        {readOnly ? null : s.finished ? (
+        {readOnly ? (
+          <PhaseBadge {...gamePhase(game, s)} running={s.running} />
+        ) : s.finished ? (
           <button className="primary" onClick={finish}>
             Save game
           </button>
@@ -305,6 +320,15 @@ export function LiveGame({ game, team, players, events, readOnly, clockOffset = 
 
       {toast && <div className="toast">{toast}</div>}
     </>
+  );
+}
+
+function PhaseBadge({ label, detail, running }: { label: string; detail: string; running: boolean }) {
+  return (
+    <div className="phase">
+      <div className="phase-label">{label}</div>
+      {detail && <div className={`phase-detail ${running ? 'running' : ''}`}>{detail}</div>}
+    </div>
   );
 }
 

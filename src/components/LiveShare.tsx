@@ -24,17 +24,16 @@ export function ShareStatus({ state, onLink, onStop }: { state: ShareState; onLi
   );
 }
 
-/** Bottom sheet with the watch link as a QR code, plus copy / share buttons. */
-export function ShareSheet({ url, onClose }: { url: string; onClose: () => void }) {
-  const [copied, setCopied] = useState(false);
+/**
+ * Bottom sheet with the watch link as a QR code. "Send link" opens the phone's share menu
+ * (Messages, WhatsApp, email…), which browsers only offer on https.
+ */
+export function ShareSheet({ url, game, onClose }: { url: string; game: string; onClose: () => void }) {
+  const [copied, setCopied] = useState<'yes' | 'failed' | null>(null);
+  const canShare = typeof navigator.share === 'function';
 
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-    } catch {
-      /* clipboard blocked; the link is on screen to select by hand */
-    }
+  function send() {
+    navigator.share({ title: `${game} live`, text: `Follow ${game} live:`, url }).catch(() => {});
   }
 
   return (
@@ -47,18 +46,49 @@ export function ShareSheet({ url, onClose }: { url: string; onClose: () => void 
         </p>
         <QrCode text={url} />
         <p className="share-url small">{url}</p>
+        {copied === 'failed' && <p className="small center">Couldn't copy. Press and hold the link above to copy it.</p>}
         <div className="actions">
-          {'share' in navigator && (
-            <button onClick={() => navigator.share({ title: 'Live game', url }).catch(() => {})}>Send link</button>
+          {canShare && (
+            <button className="primary" onClick={send}>
+              Send link
+            </button>
           )}
-          <button onClick={copy}>{copied ? 'Copied' : 'Copy link'}</button>
-          <button className="primary" onClick={onClose}>
-            Done
+          <button className={canShare ? '' : 'primary'} onClick={async () => setCopied((await copyText(url)) ? 'yes' : 'failed')}>
+            {copied === 'yes' ? 'Copied' : 'Copy link'}
           </button>
+          <button onClick={onClose}>Done</button>
         </div>
       </div>
     </div>
   );
+}
+
+/** Copy to the clipboard, falling back to the old select-and-copy where the Clipboard API is missing (http). */
+async function copyText(text: string): Promise<boolean> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      /* fall through */
+    }
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.setAttribute('readonly', '');
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, text.length); // iOS ignores select() on its own
+  let ok = false;
+  try {
+    ok = document.execCommand('copy');
+  } catch {
+    /* unsupported */
+  }
+  ta.remove();
+  return ok;
 }
 
 /** QR code as one SVG path. Always dark-on-white, since scanners struggle with inverted codes. */

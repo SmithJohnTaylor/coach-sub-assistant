@@ -10,6 +10,7 @@ import { App } from './App';
 import { db } from './db';
 import { ClockSync, fromSnapshot, toSnapshot } from './live/client';
 import type { ClientMessage, ServerMessage, Snapshot } from './live/protocol';
+import { gamePhase } from './screens/LiveGame';
 import { replay } from './timing';
 import type { Game, GameEvent, Player, Team } from './types';
 
@@ -93,6 +94,25 @@ describe('snapshots', () => {
     const at = T0 + 20 * MIN;
     expect(replay(back.game, back.events, at)).toEqual(replay(game, events, at));
     expect(back.team.name).toBe('Tigers');
+  });
+});
+
+describe('gamePhase', () => {
+  const at = (g: Pick<Game, 'periods'>, evs: Omit<GameEvent, 'id' | 'gameId'>[], min: number) =>
+    gamePhase(g, replay({ ...game, ...g }, evs.map((e, i) => ({ ...e, id: i + 1, gameId: 1 }) as GameEvent), T0 + min * MIN));
+  const start = (min: number) => ({ type: 'start' as const, t: T0 + min * MIN });
+  const pause = (min: number) => ({ type: 'pause' as const, t: T0 + min * MIN });
+  const end = (min: number) => ({ type: 'periodEnd' as const, t: T0 + min * MIN });
+
+  it('names where the game is', () => {
+    const halves = { periods: 2 };
+    expect(at(halves, [], 0)).toEqual({ label: '1st half', detail: 'Not started' });
+    expect(at(halves, [start(0)], 5)).toEqual({ label: '1st half', detail: 'In play' });
+    expect(at(halves, [start(0), pause(5)], 6)).toEqual({ label: '1st half', detail: 'Paused' });
+    expect(at(halves, [start(0), end(25)], 30)).toEqual({ label: 'Halftime', detail: '2nd half next' });
+    expect(at(halves, [start(0), end(25), start(35)], 40)).toEqual({ label: '2nd half', detail: 'In play' });
+    expect(at(halves, [start(0), end(25), start(35), end(60)], 61)).toEqual({ label: 'Full time', detail: '' });
+    expect(at({ periods: 4 }, [start(0), end(12)], 14)).toEqual({ label: 'Break', detail: 'Q2 next' });
   });
 });
 
@@ -180,6 +200,32 @@ describe('sharing a game (coach running it)', () => {
     expect(share.key.length).toBeGreaterThanOrEqual(43);
     expect(document.querySelector('.share-url')!.textContent).toContain(`#/watch/${share.id}`);
     expect(document.querySelector('svg.qr path')).toBeTruthy();
+
+    // No share menu here (jsdom, like any http page), so Copy is the main button, and it
+    // falls back to select-and-copy without the Clipboard API.
+    expect(hasButton('Send link')).toBe(false);
+    expect(button('Copy link').className).toBe('primary');
+    document.execCommand = vi.fn(() => false);
+    await tap(button('Copy link'));
+    await sees("Couldn't copy. Press and hold the link");
+    document.execCommand = vi.fn(() => true);
+    await tap(button('Copy link'));
+    await sees('Copied');
+    expect(document.execCommand).toHaveBeenCalledWith('copy');
+    await tap(button('Done'));
+
+    // Where the share menu exists (https), Send link leads, with the game in the message.
+    const shareMenu = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'share', { value: shareMenu, configurable: true });
+    await tap(button('Link'));
+    expect(button('Send link').className).toBe('primary');
+    await tap(button('Send link'));
+    expect(shareMenu).toHaveBeenCalledWith({
+      title: 'Tigers vs Lions live',
+      text: 'Follow Tigers vs Lions live:',
+      url: expect.stringContaining(`#/watch/${share.id}`),
+    });
+    delete (navigator as { share?: unknown }).share;
     await tap(button('Done'));
 
     await waitFor(() => expect(FakeWebSocket.all).toHaveLength(1));
@@ -272,6 +318,8 @@ describe('watching a shared game', () => {
     await sees('Watching live');
     await sees('Tigers vs Lions');
     expect(clock()).toBe('20:00');
+    const phase = () => document.querySelector('.phase')?.textContent;
+    expect(phase()).toBe('1st halfIn play');
     const names = (sel: string) => [...document.querySelectorAll(`${sel} .pname`)].map((n) => n.textContent);
     expect(names('.slot')).toEqual(['Dee', 'Ben', '7 Ava']); // FWD row first
     expect(names('.bench-card')).toEqual(['Cal']);
@@ -294,9 +342,15 @@ describe('watching a shared game', () => {
     ws.receive({ type: 'snapshot', snap: toSnapshot(game, team, players, paused, 0), at: T0 + 21 * MIN });
     await waitFor(() => expect(clock()).toBe('21:00'));
     await sees('Clock paused');
+    expect(phase()).toBe('1st halfPaused');
+
+    const half = [...events, { id: 3, gameId: 1, t: T0 + 25 * MIN, type: 'periodEnd' } as GameEvent];
+    vi.setSystemTime(T0 + 30 * MIN - SKEW);
+    ws.receive({ type: 'snapshot', snap: toSnapshot(game, team, players, half, 0), at: T0 + 25 * MIN });
+    await waitFor(() => expect(phase()).toBe('Halftime2nd half next'));
 
     ws.receive({ type: 'owner', online: false });
-    await sees("Coach's phone is offline · last update 1 min ago");
+    await sees("Coach's phone is offline · last update 5 min ago");
 
     ws.receive({ type: 'ended' });
     await sees("isn't being shared anymore");
