@@ -6,7 +6,7 @@ import { useNow, useWakeLock } from '../hooks';
 import { go, href } from '../router';
 import { playerLabel, type PlayerLine } from '../stats';
 import { fmt, replay, type GameState } from '../timing';
-import type { EventInput, Game, GameEvent, Player, Position, Team } from '../types';
+import type { EventInput, Game, GameEvent, Player, Position, Side, Team } from '../types';
 
 type Selection = { kind: 'slot'; slot: number } | { kind: 'bench'; playerId: number } | null;
 
@@ -113,6 +113,12 @@ export function LiveGame({ game, team, players, events, readOnly, clockOffset = 
     setSel({ kind: 'bench', playerId: id });
   }
 
+  async function goal(side: Side) {
+    await emit({ type: 'goal', side });
+    const score = { ...s.score, [side]: s.score[side] + 1 };
+    flash(`Goal ${side === 'us' ? team.name : game.opponent || 'Opponent'}! ${score.us}–${score.them}`);
+  }
+
   async function undo() {
     const last = await undoLast(gameId);
     setSel(null);
@@ -198,6 +204,16 @@ export function LiveGame({ game, team, players, events, readOnly, clockOffset = 
             )}
           </div>
         )}
+      </div>
+      <div className="score-bar">
+        <ScoreSide name={team.name} goals={s.score.us} onGoal={readOnly ? undefined : () => goal('us')} />
+        <span className="score-dash">–</span>
+        <ScoreSide
+          name={game.opponent || 'Opponent'}
+          goals={s.score.them}
+          onGoal={readOnly ? undefined : () => goal('them')}
+          away
+        />
       </div>
       {statusBar}
 
@@ -332,6 +348,24 @@ function PhaseBadge({ label, detail, running }: { label: string; detail: string;
   );
 }
 
+function ScoreSide({ name, goals, onGoal, away }: { name: string; goals: number; onGoal?: () => void; away?: boolean }) {
+  const parts = [
+    onGoal && (
+      <button key="b" className="goal-btn" onClick={onGoal} aria-label={`Goal ${name}`}>
+        +1
+      </button>
+    ),
+    <span key="n" className="score-name">
+      {name}
+    </span>,
+    <span key="s" className="score">
+      {goals}
+    </span>,
+  ];
+  // Mirrored around the dash: "+1 Tigers 2 – 1 Lions +1".
+  return <div className={`score-side ${away ? 'away' : ''}`}>{away ? parts.reverse() : parts}</div>;
+}
+
 function shortLabel(p: Player | undefined): string {
   if (!p) return '?';
   return p.number ? `${p.number} ${p.name}` : p.name;
@@ -349,6 +383,8 @@ function describe(e: GameEvent, name: (id: number | null) => string): string {
       return e.playerIn == null ? `bench spot ${e.slot + 1}` : `${name(e.playerIn)} in`;
     case 'swap':
       return 'position swap';
+    case 'goal':
+      return e.side === 'us' ? 'our goal' : 'their goal';
   }
 }
 

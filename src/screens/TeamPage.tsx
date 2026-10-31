@@ -4,7 +4,7 @@ import { Header } from '../components/Header';
 import { db, deleteTeam } from '../db';
 import { FORMATS, sortSlots } from '../formats';
 import { go, href } from '../router';
-import { playerLabel } from '../stats';
+import { finalScore, playerLabel } from '../stats';
 import { POSITIONS, type Player, type Position, type Team } from '../types';
 
 export function TeamPage({ teamId }: { teamId: number }) {
@@ -17,6 +17,10 @@ export function TeamPage({ teamId }: { teamId: number }) {
     () => db.games.where('teamId').equals(teamId).reverse().sortBy('date'),
     [teamId],
   );
+  const scores = useLiveQuery(async () => {
+    const goals = await db.events.where('gameId').anyOf((games ?? []).map((g) => g.id!)).filter((e) => e.type === 'goal').toArray();
+    return new Map((games ?? []).map((g) => [g.id!, finalScore(goals.filter((e) => e.gameId === g.id))]));
+  }, [games]);
 
   if (team === undefined) return null;
   if (team === null) return <p>Team not found.</p>;
@@ -61,6 +65,7 @@ export function TeamPage({ teamId }: { teamId: number }) {
                 <a className="row-link" href={href.game(g.id!)}>
                   <div>
                     <strong>{g.opponent ? `vs ${g.opponent}` : 'Game'}</strong>
+                    {scores?.has(g.id!) && <span className="game-score"> {scores.get(g.id!)}</span>}
                     <div className="muted small">
                       {new Date(g.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       {g.status === 'live' && ' · in progress'}

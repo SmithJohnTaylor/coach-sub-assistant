@@ -169,6 +169,17 @@ describe('game day, tapped through the real screens', () => {
     await tap(await onBench('Ivy'));
     await onBench('Dee');
 
+    // Goals: Tigers score, then a mis-tap for Lions is undone.
+    const score = () => [...document.querySelectorAll('.score-bar .score')].map((n) => n.textContent);
+    expect(score()).toEqual(['0', '0']);
+    const goalFor = (team: string) => container.querySelector<HTMLElement>(`[aria-label="Goal ${team}"]`)!;
+    await tap(goalFor('Tigers'));
+    await sees('Goal Tigers! 1–0');
+    await tap(goalFor('Lions'));
+    await waitFor(() => expect(score()).toEqual(['1', '1']));
+    await tap(button(container, /Undo: their goal/));
+    await waitFor(() => expect(score()).toEqual(['1', '0']));
+
     // Half runs 30 seconds long; clock shows stoppage.
     advance(12 * MIN + 30 * SEC);
     await waitFor(() => expect(clock()).toBe('25:00 +0:30'));
@@ -216,6 +227,7 @@ describe('game day, tapped through the real screens', () => {
 
     // --- Summary.
     await sees('Share summary');
+    await sees('Tigers 1–0 Lions');
     await sees('10 players');
     expect(tableTotals()).toEqual({
       Ava: '50:30',

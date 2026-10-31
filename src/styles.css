@@ -418,6 +418,55 @@ details > * + * {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.score-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.score-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.score-side:not(.away) .score-name {
+  text-align: right;
+}
+.score {
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.final-score {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+.game-score {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.score-dash {
+  font-size: 22px;
+  color: var(--muted);
+}
+.goal-btn {
+  padding: 4px 10px;
+  min-height: 36px;
+  font-size: 14px;
+}
 .clock {
   font-size: 34px;
   font-weight: 700;

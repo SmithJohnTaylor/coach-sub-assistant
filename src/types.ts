@@ -40,7 +40,11 @@ export type GameEvent =
   | { id?: number; gameId: number; t: number; type: 'pause' } // clock stops, same period
   | { id?: number; gameId: number; t: number; type: 'periodEnd' } // clock stops, next period
   | { id?: number; gameId: number; t: number; type: 'sub'; slot: number; playerIn: number | null }
-  | { id?: number; gameId: number; t: number; type: 'swap'; slotA: number; slotB: number };
+  | { id?: number; gameId: number; t: number; type: 'swap'; slotA: number; slotB: number }
+  | { id?: number; gameId: number; t: number; type: 'goal'; side: Side };
+
+/** Which team scored: this team, or the opponent. */
+export type Side = 'us' | 'them';
 
 export type GameEventType = GameEvent['type'];
 

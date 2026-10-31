@@ -336,6 +336,14 @@ describe('watching a shared game', () => {
     expect(document.querySelector('table.times')).toBeTruthy();
     await tap(button('Field'));
 
+    // A goal shows up for watchers, with no button to add one.
+    const score = () => [...document.querySelectorAll('.score-bar .score')].map((n) => n.textContent);
+    expect(score()).toEqual(['0', '0']);
+    expect(document.querySelector('.goal-btn')).toBeNull();
+    const scored = [...events, { id: 3, gameId: 1, t: T0 + 19 * MIN, type: 'goal', side: 'them' } as GameEvent];
+    ws.receive({ type: 'snapshot', snap: toSnapshot(game, team, players, scored, 0), at: T0 + 19 * MIN });
+    await waitFor(() => expect(score()).toEqual(['0', '1']));
+
     // Updates replace the game; the coach pausing stops the clock here too.
     vi.setSystemTime(T0 + 22 * MIN - SKEW);
     const paused = [...events, { id: 3, gameId: 1, t: T0 + 21 * MIN, type: 'pause' } as GameEvent];

@@ -3,7 +3,7 @@ import { Header } from '../components/Header';
 import { TimeTable } from '../components/TimeTable';
 import { db, deleteGame } from '../db';
 import { go, href } from '../router';
-import { gameTotals, type PlayerLine } from '../stats';
+import { finalScore, gameTotals, type PlayerLine } from '../stats';
 import { fmt } from '../timing';
 import type { Game, GameEvent, Player, Team } from '../types';
 
@@ -28,7 +28,8 @@ export function GameSummary({ game, team, players, events }: Props) {
 
   const played = Math.max(0, ...lines.map((l) => l.total));
   const date = new Date(game.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  const title = `${team.name}${game.opponent ? ` vs ${game.opponent}` : ''} (${date})`;
+  const score = finalScore(events);
+  const title = `${team.name} ${score}${game.opponent ? ` ${game.opponent}` : ''} (${date})`;
 
   async function reopen() {
     await db.games.update(game.id!, { status: 'live' });
@@ -43,6 +44,9 @@ export function GameSummary({ game, team, players, events }: Props) {
     <>
       <Header title={game.opponent ? `vs ${game.opponent}` : 'Game'} back={href.team(team.id!)} />
       <main>
+        <p className="final-score">
+          {team.name} {score} {game.opponent || 'Opponent'}
+        </p>
         <p className="muted">
           {date} · {game.periods} × {game.periodMinutes} min · {lines.length} players
           {played > 0 && ` · most ${fmt(played)}`}

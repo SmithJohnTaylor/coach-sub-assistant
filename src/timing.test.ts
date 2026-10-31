@@ -40,6 +40,22 @@ describe('replay', () => {
     expect(s.players[4].onSince).toBe(4 * MIN);
   });
 
+  it('keeps score without touching the clock', () => {
+    const s = replay(
+      game,
+      [
+        ev(0, { type: 'start' }),
+        ev(2 * MIN, { type: 'goal', side: 'us' }),
+        ev(4 * MIN, { type: 'goal', side: 'them' }),
+        ev(6 * MIN, { type: 'goal', side: 'us' }),
+      ],
+      10 * MIN,
+    );
+    expect(s.score).toEqual({ us: 2, them: 1 });
+    expect(s.running).toBe(true);
+    expect(s.players[1].total).toBe(10 * MIN);
+  });
+
   it('does not count paused time', () => {
     const s = replay(
       game,

@@ -1,4 +1,4 @@
-import type { Game, GameEvent, Position } from './types';
+import type { Game, GameEvent, Position, Side } from './types';
 
 export interface PlayerTime {
   /** Total on-field ms while the clock was running. */
@@ -21,6 +21,7 @@ export interface GameState {
   finished: boolean;
   lineup: (number | null)[];
   players: Record<number, PlayerTime>;
+  score: Record<Side, number>;
 }
 
 type GameShape = Pick<Game, 'slots' | 'startLineup' | 'periods' | 'present'>;
@@ -46,6 +47,7 @@ export function replay(game: GameShape, events: GameEvent[], now: number): GameS
     finished: false,
     lineup: [...game.startLineup],
     players,
+    score: { us: 0, them: 0 },
   };
   for (const id of s.lineup) if (id != null) ensure(id).onSince = 0;
 
@@ -113,6 +115,9 @@ export function replay(game: GameShape, events: GameEvent[], now: number): GameS
         s.lineup[e.slotB] = a;
         break;
       }
+      case 'goal':
+        s.score[e.side] += 1;
+        break;
     }
   }
 

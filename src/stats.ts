@@ -15,6 +15,13 @@ export function gameTotals(game: Game, events: GameEvent[]): Record<number, Play
   return replay(game, events, end).players;
 }
 
+/** Final score: "3–1", this team first. */
+export function finalScore(events: GameEvent[]): string {
+  const score = { us: 0, them: 0 };
+  for (const e of events) if (e.type === 'goal') score[e.side] += 1;
+  return `${score.us}–${score.them}`;
+}
+
 export function seasonLines(players: Player[], games: Game[], eventsByGame: Map<number, GameEvent[]>): PlayerLine[] {
   const lines = new Map<number, PlayerLine>();
   for (const p of players) {
