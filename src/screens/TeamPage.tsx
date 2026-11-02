@@ -2,7 +2,9 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { useState } from 'react';
 import { Header } from '../components/Header';
 import { db, deleteTeam } from '../db';
+import { shareFile } from '../export';
 import { FORMATS, sortSlots } from '../formats';
+import { toRosterFile } from '../roster';
 import { go, href } from '../router';
 import { finalScore, playerLabel } from '../stats';
 import { POSITIONS, type Player, type Position, type Team } from '../types';
@@ -54,7 +56,7 @@ export function TeamPage({ teamId }: { teamId: number }) {
           </p>
         )}
 
-        <Roster teamId={teamId} players={players ?? []} />
+        <Roster team={team} players={players ?? []} />
 
         <section>
           <h2>Games</h2>
@@ -85,10 +87,12 @@ export function TeamPage({ teamId }: { teamId: number }) {
   );
 }
 
-function Roster({ teamId, players }: { teamId: number; players: Player[] }) {
+function Roster({ team, players }: { team: Team; players: Player[] }) {
+  const teamId = team.id!;
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
   const [editing, setEditing] = useState<number | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -96,6 +100,12 @@ function Roster({ teamId, players }: { teamId: number; players: Player[] }) {
     await db.players.add({ teamId, name: name.trim(), number: number.trim() || undefined });
     setName('');
     setNumber('');
+  }
+
+  async function shareRoster() {
+    const { filename, json } = toRosterFile(team, players);
+    const result = await shareFile(filename, json, 'application/json');
+    if (result === 'downloaded') setMsg(`Saved ${filename}. Send it to the other coach.`);
   }
 
   return (
@@ -124,6 +134,15 @@ function Roster({ teamId, players }: { teamId: number; players: Player[] }) {
           Add
         </button>
       </form>
+      {players.length > 0 && (
+        <>
+          <div className="actions">
+            <button onClick={shareRoster}>Share roster</button>
+            {msg && <span className="muted small">{msg}</span>}
+          </div>
+          <p className="muted small">Sends the team and roster as a file another coach can import. Games and minutes stay here.</p>
+        </>
+      )}
     </section>
   );
 }

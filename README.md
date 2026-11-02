@@ -16,6 +16,7 @@ A phone web app for tracking youth soccer playing time from the sideline. Tap to
 - **One-tap subs and position swaps** on a field view laid out by your formation (4v4 through 11v11, or custom).
 - **Minutes for every player, split by position**, updated live.
 - **Fair-share colors** show who's behind (orange) or ahead (blue) on minutes, and the bench lists the players with the least time first.
+- **Score tracking:** tap **+1** for either side when a goal goes in. The final score shows on the summary and the game list.
 - **Undo** for any mis-tap.
 - **Late arrivals** can join the bench mid-game.
 - **Game summaries and season totals** you can share as text or download as CSV.
@@ -115,11 +116,15 @@ An assistant coach can follow along on their own phone: the field, bench, clock,
 
 Sharing needs signal on your phone. If you lose it, keep coaching as normal: the watcher's clock keeps running, they see "Coach's phone is offline", and they catch up as soon as you reconnect. The link stops working when you tap Stop, delete the game, or a day after the last change.
 
+## Sharing a roster with another coach
+
+If someone else will run a game for your team, send them the roster instead of having them type it in. On your team's page, tap **Share roster** under the roster and send the file (Messages, AirDrop, email). On their phone, they save the file, open Sub Assistant, tap **Import a team from a roster file** on the home screen, and pick it. They get the team, its formation, and every player's name and number. Games and minutes stay on your phone, and if your roster changes later, share it again.
+
 ## Your data
 
 Everything is stored in your phone's browser. Nothing is uploaded and nobody else can see it, unless you [share a game live](#sharing-a-game-live). Then that one game (team name, opponent, the first names and numbers of the kids at it, and the subs) goes to the relay server until you stop sharing or a day passes. Storing everything on the phone also means:
 
-- Data doesn't sync between devices, or between Safari and the home-screen app on some phones. Use the same one every game.
+- Data doesn't sync between devices (to give another coach your team, [share the roster](#sharing-a-roster-with-another-coach)), or between Safari and the home-screen app on some phones. Use the same one every game.
 - Clearing browser data deletes it, and so can Safari on iPhone if the app isn't on your home screen (see [Install on your phone](#install-on-your-phone)).
 - There's no restore, so tap **Download CSV** on each game summary (or on Season stats) to keep your own copy.
 

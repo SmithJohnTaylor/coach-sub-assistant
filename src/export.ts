@@ -58,6 +58,21 @@ export async function shareText(title: string, text: string): Promise<'shared' |
   return 'copied';
 }
 
+/** Native share sheet with the file attached when the phone supports it; otherwise download it. */
+export async function shareFile(filename: string, content: string, type: string): Promise<'shared' | 'downloaded' | 'cancelled'> {
+  const file = new File([content], filename, { type });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return 'shared';
+    } catch {
+      return 'cancelled';
+    }
+  }
+  downloadFile(filename, content, type);
+  return 'downloaded';
+}
+
 export function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }

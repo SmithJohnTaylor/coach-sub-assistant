@@ -1,8 +1,9 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Header } from '../components/Header';
 import { db } from '../db';
 import { FORMATS } from '../formats';
+import { importRoster, parseRosterFile } from '../roster';
 import { go, href } from '../router';
 
 export const GUIDE_URL = 'https://github.com/SmithJohnTaylor/coach-sub-assistant#readme';
@@ -91,6 +92,7 @@ export function Teams() {
               Add team
             </button>
           </form>
+          <ImportRoster />
         </section>
 
         <InstallTip />
@@ -104,6 +106,35 @@ export function Teams() {
         )}
       </main>
     </>
+  );
+}
+
+/** Another coach sent their roster file: add it as a team here. */
+function ImportRoster() {
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // so picking the same file again still fires
+    if (!file) return;
+    try {
+      const roster = parseRosterFile(await file.text());
+      setError(null);
+      go(href.team(await importRoster(roster)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  return (
+    <div className="import">
+      <button className="link" onClick={() => input.current?.click()}>
+        Import a team from a roster file
+      </button>
+      <input ref={input} type="file" accept=".json,application/json" hidden onChange={pick} />
+      {error && <p className="danger-text small">{error}</p>}
+    </div>
   );
 }
 

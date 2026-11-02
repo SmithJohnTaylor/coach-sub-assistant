@@ -8,6 +8,7 @@ import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { db } from './db';
+import { parseRosterFile } from './roster';
 import { GUIDE_URL } from './screens/Teams';
 
 const SEC = 1000;
@@ -130,6 +131,11 @@ describe('game day, tapped through the real screens', () => {
     fireEvent.change(container.querySelector('input[placeholder="Opponent (optional)"]')!, { target: { value: 'Lions' } });
     await tap(button(container, 'Jo'));
     await sees("Who's here (9/10)");
+    // 7v7 defaults to two 30-minute halves; this league plays 25.
+    const minutes = container.querySelector<HTMLInputElement>('input[type="number"]')!;
+    expect(minutes.value).toBe('30');
+    expect(container.querySelector<HTMLSelectElement>('select')!.value).toBe('2');
+    fireEvent.change(minutes, { target: { value: '25' } });
     await tap(button(container, 'Auto-fill'));
     await sees('Starting lineup (7/7)');
     await tap(button(container, 'Start game'));
@@ -319,5 +325,83 @@ describe('game day, tapped through the real screens', () => {
     await onBench('P05');
     advance(15 * MIN);
     await waitFor(() => expect(clock()).toBe('35:00'));
+  });
+});
+
+describe('sharing a roster with another coach', () => {
+  // jsdom's Blob lacks text(); every browser the app runs in has it.
+  Blob.prototype.text ??= function (this: Blob) {
+    return new Promise<string>((resolve) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.readAsText(this);
+    });
+  };
+
+  it("exports the team, and the other coach's phone imports it as a new team", async () => {
+    let container = await createTeamAndRoster();
+    // Jersey number for one kid; the format comes along too.
+    await tap(button(container, 'Edit'));
+    fireEvent.change(container.querySelector('input[placeholder="#"]')!, { target: { value: '7' } });
+    await tap(button(container, 'Save'));
+    await sees('#7 Ava');
+
+    // No share sheet in this browser, so the file downloads.
+    let saved: Blob | undefined;
+    URL.createObjectURL = vi.fn((b: Blob) => ((saved = b), 'blob:roster'));
+    URL.revokeObjectURL = vi.fn();
+    await tap(button(container, 'Share roster'));
+    await sees('Saved tigers-roster.json');
+    const json = await saved!.text();
+    expect(json).not.toMatch(/teamId|"id"/);
+
+    // The other coach's phone: nothing on it yet.
+    cleanup();
+    await db.delete();
+    await db.open();
+    location.hash = '#/';
+    container = render(<App />).container;
+    await sees('Create your team');
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [new File([json], 'tigers-roster.json')] } });
+    });
+    await sees(`Roster (${ROSTER.length})`);
+    await sees('#7 Ava');
+    const team = (await db.teams.toArray())[0];
+    expect(team).toMatchObject({ name: 'Tigers', format: '7v7' });
+    expect(team.slots).toHaveLength(7);
+
+    // A file that isn't a roster says so and adds nothing.
+    nav('#/');
+    await sees('Import a team from a roster file');
+    const input2 = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await act(async () => {
+      fireEvent.change(input2, { target: { files: [new File(['Player,Number\nAva,7'], 'playing-time.csv')] } });
+    });
+    await sees("That file isn't a Sub Assistant roster.");
+    expect(await db.teams.count()).toBe(1);
+  });
+
+  it('rejects files that are not quite rosters', () => {
+    const ok = { app: 'sub-assistant-roster', v: 1, team: { name: 'Tigers', format: '5v5', slots: ['GK', 'DEF', 'DEF', 'FWD', 'FWD'] }, players: [{ name: ' Ava ', number: '7' }] };
+    const parse = (x: unknown) => () => parseRosterFile(JSON.stringify(x));
+    expect(parse(ok)()).toEqual({ ...ok, players: [{ name: 'Ava', number: '7' }] });
+    // Edited positions mean a custom formation.
+    expect(parse({ ...ok, team: { ...ok.team, slots: ['GK', 'MID'] } })().team.format).toBe('custom');
+    expect(parse({ ...ok, v: 2 })).toThrow('newer version');
+    for (const bad of [
+      null,
+      [],
+      { ...ok, app: 'other' },
+      { ...ok, team: { ...ok.team, name: '  ' } },
+      { ...ok, team: { ...ok.team, slots: ['GK', 'STRIKER'] } },
+      { ...ok, team: { ...ok.team, slots: [] } },
+      { ...ok, players: [{ number: '7' }] },
+      { ...ok, players: 'Ava' },
+    ]) {
+      expect(parse(bad), JSON.stringify(bad)).toThrow("isn't a Sub Assistant roster");
+    }
+    expect(() => parseRosterFile('not json')).toThrow("isn't a Sub Assistant roster");
   });
 });

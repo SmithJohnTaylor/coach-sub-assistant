@@ -11,7 +11,7 @@ export interface Format {
 export const FORMATS: Format[] = [
   { key: '4v4', label: '4v4 (no GK)', slots: ['DEF', 'DEF', 'FWD', 'FWD'], periods: 4, periodMinutes: 10 },
   { key: '5v5', label: '5v5', slots: ['GK', 'DEF', 'DEF', 'FWD', 'FWD'], periods: 4, periodMinutes: 12 },
-  { key: '7v7', label: '7v7', slots: ['GK', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'FWD'], periods: 2, periodMinutes: 25 },
+  { key: '7v7', label: '7v7', slots: ['GK', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'FWD'], periods: 2, periodMinutes: 30 },
   { key: '9v9', label: '9v9', slots: ['GK', 'DEF', 'DEF', 'DEF', 'MID', 'MID', 'MID', 'FWD', 'FWD'], periods: 2, periodMinutes: 30 },
   {
     key: '11v11',
